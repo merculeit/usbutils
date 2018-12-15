@@ -24,3 +24,4 @@ usbreset
 usbhid-dump.8
 *.gz
 *.bz2
+.DS_Store

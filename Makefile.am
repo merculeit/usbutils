@@ -50,10 +50,12 @@ lsusb_LDADD = \
 else
 lsusb_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) \
-	-DLINUX=0
+	-DLINUX=0 -DDATADIR=\"$(datadir)\"
 
 lsusb_LDADD = \
 	$(LIBUSB_LIBS)
+
+lsusb_SOURCES += hwdb.c hwdb.h
 endif
 
 if LINUX

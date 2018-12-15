@@ -23,6 +23,8 @@
 
 #if LINUX
 #include <libudev.h>
+#else
+#include "hwdb.h"
 #endif
 
 #include "usb-spec.h"
@@ -48,6 +50,8 @@ static unsigned int hashnum(unsigned int num)
 #if LINUX
 static struct udev *udev = NULL;
 static struct udev_hwdb *hwdb = NULL;
+#else
+static struct hwdb hwdb = {0, NULL, 0, NULL, {0, 0, 0, NULL, 0, 0}};
 #endif
 
 static struct audioterminal *audioterminals_hash[HASHSZ] = { NULL, };
@@ -114,60 +118,82 @@ const char *names_countrycode(unsigned int countrycode)
 	return names_genericstrtable(countrycodes_hash, countrycode);
 }
 
+#if LINUX
 static const char *hwdb_get(const char *modalias, const char *key)
 {
-#if LINUX
 	struct udev_list_entry *entry;
 
 	udev_list_entry_foreach(entry, udev_hwdb_get_properties_list_entry(hwdb, modalias, 0))
 		if (strcmp(udev_list_entry_get_name(entry), key) == 0)
 			return udev_list_entry_get_value(entry);
-#else
-	(void)modalias;
-	(void)key;
-#endif
 
 	return NULL;
 }
+#endif
 
 const char *names_vendor(uint16_t vendorid)
 {
+#if LINUX
 	char modalias[64];
 
 	sprintf(modalias, "usb:v%04X*", vendorid);
 	return hwdb_get(modalias, "ID_VENDOR_FROM_DATABASE");
+#else
+	hwdb_key_t keys[] = {vendorid};
+	return HWDB_GET_NAME(&hwdb, HWDB_GID_VENDOR_DEVICE_AND_INTERFACE, keys);
+#endif
 }
 
 const char *names_product(uint16_t vendorid, uint16_t productid)
 {
+#if LINUX
 	char modalias[64];
 
 	sprintf(modalias, "usb:v%04Xp%04X*", vendorid, productid);
 	return hwdb_get(modalias, "ID_MODEL_FROM_DATABASE");
+#else
+	hwdb_key_t keys[] = {vendorid, productid};
+	return HWDB_GET_NAME(&hwdb, HWDB_GID_VENDOR_DEVICE_AND_INTERFACE, keys);
+#endif
 }
 
 const char *names_class(uint8_t classid)
 {
+#if LINUX
 	char modalias[64];
 
 	sprintf(modalias, "usb:v*p*d*dc%02X*", classid);
 	return hwdb_get(modalias, "ID_USB_CLASS_FROM_DATABASE");
+#else
+	hwdb_key_t keys[] = {classid};
+	return HWDB_GET_NAME(&hwdb, HWDB_GID_KNOWN_DEVICE_CLASSES_SUBCLASSES_AND_PROTOCOLS, keys);
+#endif
 }
 
 const char *names_subclass(uint8_t classid, uint8_t subclassid)
 {
+#if LINUX
 	char modalias[64];
 
 	sprintf(modalias, "usb:v*p*d*dc%02Xdsc%02X*", classid, subclassid);
 	return hwdb_get(modalias, "ID_USB_SUBCLASS_FROM_DATABASE");
+#else
+	hwdb_key_t keys[] = {classid, subclassid};
+	return HWDB_GET_NAME(&hwdb, HWDB_GID_KNOWN_DEVICE_CLASSES_SUBCLASSES_AND_PROTOCOLS, keys);
+#endif
 }
 
 const char *names_protocol(uint8_t classid, uint8_t subclassid, uint8_t protocolid)
 {
+#if LINUX
 	char modalias[64];
 
 	sprintf(modalias, "usb:v*p*d*dc%02Xdsc%02Xdp%02X*", classid, subclassid, protocolid);
 	return hwdb_get(modalias, "ID_USB_PROTOCOL_FROM_DATABASE");
+#else
+	hwdb_key_t keys[] = {classid, subclassid, protocolid};
+	return HWDB_GET_NAME(&hwdb, HWDB_GID_KNOWN_DEVICE_CLASSES_SUBCLASSES_AND_PROTOCOLS, keys);
+#endif
 }
 
 const char *names_audioterminal(uint16_t termt)
@@ -426,6 +452,8 @@ int names_init(void)
 		if (!hwdb)
 			r = -1;
 	}
+#else
+	r = hwdb_init(&hwdb, DATADIR "/usb.ids");
 #endif
 
 	r = hash_tables();
@@ -438,5 +466,7 @@ void names_exit(void)
 #if LINUX
 	hwdb = udev_hwdb_unref(hwdb);
 	udev = udev_unref(udev);
+#else
+	hwdb_exit(&hwdb);
 #endif
 }

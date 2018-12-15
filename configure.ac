@@ -11,13 +11,22 @@ AC_PREFIX_DEFAULT([/usr])
 
 AC_USE_SYSTEM_EXTENSIONS
 AC_SYS_LARGEFILE
+AC_CANONICAL_HOST
+
+host_is_linux=no
+if test -z "${host_os##linux*}"; then
+	host_is_linux=yes
+fi
+AM_CONDITIONAL([LINUX], [test "${host_is_linux}" = "yes"])
 
 AC_CHECK_HEADERS([byteswap.h])
 AC_CHECK_FUNCS([nl_langinfo iconv])
 
 PKG_CHECK_MODULES(LIBUSB, libusb-1.0 >= 1.0.14)
 
-PKG_CHECK_MODULES(UDEV, libudev >= 196)
+if test "${host_is_linux}" = "yes"; then
+	PKG_CHECK_MODULES(UDEV, libudev >= 196)
+fi
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([

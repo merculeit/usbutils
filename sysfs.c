@@ -8,7 +8,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#if LINUX
 #include <linux/limits.h>
+#endif
 
 #include <libusb.h>
 
@@ -24,6 +27,7 @@
 
 int get_sysfs_name(char *buf, size_t size, libusb_device *dev)
 {
+#if LINUX
 	int len = 0;
 	uint8_t bnum = libusb_get_bus_number(dev);
 	uint8_t pnums[USB_MAX_DEPTH];
@@ -44,10 +48,14 @@ int get_sysfs_name(char *buf, size_t size, libusb_device *dev)
 		len += snprintf(buf + len, size - len, i ? ".%d" : "%d", pnums[i]);
 
 	return len;
+#else
+	return -1;
+#endif
 }
 
 int read_sysfs_prop(char *buf, size_t size, char *sysfs_name, char *propname)
 {
+#if LINUX
 	int n, fd;
 	char path[PATH_MAX];
 
@@ -65,4 +73,7 @@ int read_sysfs_prop(char *buf, size_t size, char *sysfs_name, char *propname)
 
 	close(fd);
 	return n;
+#else
+	return 0;
+#endif
 }

@@ -7,8 +7,10 @@
 SUBDIRS = \
 	usbhid-dump
 
+if LINUX
 AM_LDFLAGS = \
 	-Wl,--as-needed
+endif
 
 data_DATA =
 
@@ -21,8 +23,10 @@ bin_SCRIPTS = \
 	usb-devices \
 	lsusb.py
 
+if LINUX
 noinst_PROGRAMS = \
 	usbreset
+endif
 
 lsusb_SOURCES = \
 	lsusb.c lsusb.h \
@@ -35,15 +39,27 @@ lsusb_SOURCES = \
 	usb-spec.h \
 	usbmisc.c usbmisc.h
 
+if LINUX
 lsusb_CPPFLAGS = \
-	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) $(UDEV_CFLAGS)
+	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) $(UDEV_CFLAGS) \
+	-DLINUX=1
 
 lsusb_LDADD = \
 	$(LIBUSB_LIBS) \
 	$(UDEV_LIBS)
+else
+lsusb_CPPFLAGS = \
+	$(AM_CPPFLAGS) $(LIBUSB_CFLAGS) \
+	-DLINUX=0
 
+lsusb_LDADD = \
+	$(LIBUSB_LIBS)
+endif
+
+if LINUX
 usbreset_SOURCES = \
 	usbreset.c
+endif
 
 man_MANS = \
 	lsusb.8	\
